@@ -1,0 +1,27 @@
+<div style="position: relative; width: 100%; height: 300px;">
+<canvas id="uShapeChart" role="img" aria-label="Bar chart showing unique people counted across the full threshold range from 0.75 to 1.0. Values: 0.75 gives 4, 0.80 gives 5, 0.85 through 0.99 all give 6 (correct, ground truth), and 1.0 spikes to 18, showing a U-shaped error pattern where both too-low and too-high thresholds fail.">Unique people counted by threshold: 0.75 gives 4, 0.80 gives 5, 0.85 to 0.99 all give 6 (correct), 1.0 spikes to 18. Ground truth is 6 real people.</canvas>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+new Chart(document.getElementById('uShapeChart'), {
+  type: 'bar',
+  data: {
+    labels: ['0.75', '0.80', '0.85', '0.90', '0.95', '0.99', '1.00'],
+    datasets: [{
+      label: 'Unique people counted',
+      data: [4, 5, 6, 6, 6, 6, 18],
+      backgroundColor: ['#d9534f', '#d9534f', '#1baf7a', '#1baf7a', '#1baf7a', '#1baf7a', '#d9534f'],
+      borderRadius: 4,
+      maxBarThickness: 45
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, suggestedMax: 19, title: { display: true, text: 'Unique people counted' }, grid: { color: '#e1e0d9' } },
+      x: { title: { display: true, text: 'Similarity threshold' }, grid: { display: false } }
+    }
+  }
+});
+</script>

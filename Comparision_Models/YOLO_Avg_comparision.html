@@ -1,0 +1,21 @@
+<div style="position: relative; width: 100%; height: 260px;">
+<canvas id="detChart" role="img" aria-label="Bar chart comparing average person detections per frame across YOLOv8 nano, small, and medium models. Nano 4.70, small 4.86, medium 5.45.">YOLOv8n: 4.70, YOLOv8s: 4.86, YOLOv8m: 5.45 average detections per frame</canvas>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+new Chart(document.getElementById('detChart'), {
+  type: 'bar',
+  data: {
+    labels: ['YOLOv8n', 'YOLOv8s', 'YOLOv8m'],
+    datasets: [{ label: 'Avg detections / frame', data: [4.70, 4.86, 5.45], backgroundColor: '#1baf7a', borderRadius: 4, maxBarThickness: 60 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, title: { display: true, text: 'Avg. detections per frame' }, grid: { color: '#e1e0d9' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+</script>

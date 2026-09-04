@@ -1,0 +1,21 @@
+<div style="position: relative; width: 100%; height: 260px;">
+<canvas id="fpsChart" role="img" aria-label="Bar chart comparing FPS on GPU across YOLOv8 nano, small, and medium models. Nano 58.65 FPS, small 59.32 FPS, medium 34.42 FPS.">YOLOv8n: 58.65 FPS, YOLOv8s: 59.32 FPS, YOLOv8m: 34.42 FPS</canvas>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+new Chart(document.getElementById('fpsChart'), {
+  type: 'bar',
+  data: {
+    labels: ['YOLOv8n', 'YOLOv8s', 'YOLOv8m'],
+    datasets: [{ label: 'FPS (GPU)', data: [58.65, 59.32, 34.42], backgroundColor: '#2a78d6', borderRadius: 4, maxBarThickness: 60 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, title: { display: true, text: 'Frames per second' }, grid: { color: '#e1e0d9' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+</script>

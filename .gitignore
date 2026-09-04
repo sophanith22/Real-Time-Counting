@@ -1,0 +1,28 @@
+# Python cache and compiled files - never commit these
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+env/
+
+# Model weights (too large for git, and easy to re-download)
+models/*.pt
+*.pth
+
+# Generated output
+output/crops/*.jpg
+output/*.mp4
+
+# OS files
+.DS_Store
+Thumbs.db
+
+output/
+
+models/
+
+.vscode
+
+videos/
