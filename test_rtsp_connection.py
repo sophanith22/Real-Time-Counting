@@ -26,7 +26,7 @@ else:
 
 
 
-        frame = cv2.resize(frame, (1280,720))  # Resize to 980x720
+        frame = cv2.resize(frame, (1280,720))  # Resize to 1280x720
         cv2.imshow("RTSP Test", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
