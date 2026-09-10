@@ -8,10 +8,10 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Path to the YOLO model file
 YOLO_MODEL_PATH_NANNO = "models/yolov8n.pt" # Nano model, fastest but least accurate. Good for real-time use, but may miss detections.
-YOLO_MODEL_PATH_SMALL = "models/yolov8s.pt" # Small model, good for real-time use, but less accurate than medium model.
+#YOLO_MODEL_PATH_SMALL = "models/yolov8s.pt" # Small model, good for real-time use, but less accurate than medium model.
 YOLO_MODEL_PATH_MEDIUM = "models/yolov8m.pt" # Medium model, better accuracy but slower than small model. Not good for real-time use.
 YOLO_MODEL_PATH_LARGE = "models/yolov8l.pt" # Large model, best accuracy but slowest. Not good for real-time use.
-
+YOLO_MODEL_PATH_SMALL = "models/yolov11s.pt" # Small model, good for real-time use, but less accurate than medium model.
 # Pick which one to use:
 YOLO_MODEL_PATH = YOLO_MODEL_PATH_SMALL  # Use the small model for better speed, or YOLO_MODEL_PATH_NANNO for faster but less accurate detection. 
 
