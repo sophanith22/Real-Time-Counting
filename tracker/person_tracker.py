@@ -1,5 +1,6 @@
 # tracker/person_tracker.py
 
+import os
 from ultralytics import YOLO
 import numpy as np
 from typing import List, Tuple
@@ -29,6 +30,12 @@ class PersonTracker:
         "bytetrack.yaml" comes built-in with Ultralytics — we don't
         need to create this file ourselves.
         """
+        if not os.path.exists(model_path):
+            raise RuntimeError(
+                f"YOLO model file not found: {model_path}\n"
+                "Download the model (e.g. yolo11s.pt) from the Ultralytics "
+                "release page and place it inside the models/ folder."
+            )
         self.model = YOLO(model_path)
         self.confidence_threshold = confidence_threshold
         self.person_class_id = person_class_id

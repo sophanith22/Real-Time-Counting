@@ -5,3 +5,4 @@ torch>=2.0.0
 torchreid
 gdown
 tensorboard
+python-dotenv>=1.0.0

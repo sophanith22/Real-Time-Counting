@@ -1,5 +1,6 @@
 # feature_extractor/reid_extractor.py
 
+import os
 import numpy as np
 import cv2
 from typing import Optional
@@ -21,10 +22,15 @@ class FeatureExtractor:
     torchreid.models.build_model(pretrained=True). build_model with
     pretrained=True loads generic ImageNet weights (trained to tell
     apart cats/dogs/cars - 1000 general object types). It was never
-    trained to tell people apart. torchreid.utils.FeatureExtractor
-    downloads REAL Re-ID weights, trained specifically on datasets of
-    real people, to answer "are these two photos the same person?" -
-    which is exactly the question our project needs answered.
+    trained to tell people apart. FeatureExtractor loads REAL Re-ID
+    weights (the checkpoint path in config/settings.py), trained
+    specifically on datasets of real people, to answer "are these two
+    photos the same person?" - which is exactly the question our
+    project needs answered.
+
+    NOTE: if the checkpoint path points to a file that does NOT exist,
+    TorchReID silently falls back to the generic ImageNet weights, so
+    we fail fast with a clear error instead (see __init__).
     """
 
     def __init__(self, device: str = "cpu"):
@@ -36,9 +42,14 @@ class FeatureExtractor:
         """
         self.device = device
 
-        # model_path="" tells torchreid to auto-download the correct
-        # Re-ID pretrained weights for this model_name, the first time
-        # this runs. This is the key fix - see docstring above.
+        if not os.path.exists(REID_MODEL_PATH):
+            raise RuntimeError(
+                f"Re-ID model file not found: {REID_MODEL_PATH}\n"
+                "Expected an OSNet checkpoint in models/OsNetReID/ (e.g. "
+                "osnet_x0_25_msmt17.pth). If missing, download it from the "
+                "TorchReID model zoo and place it there."
+            )
+
         self.torchreid_extractor = TorchreidExtractor(
             model_name="osnet_x0_25", # Small, fast OSNet model. Good for real-time use, even on CPU.
             model_path=REID_MODEL_PATH, # Real Re-ID weights, trained on real people datasets.

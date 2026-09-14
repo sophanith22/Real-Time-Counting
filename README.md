@@ -81,10 +81,10 @@ People_Counting_Project/
 │   └── test_threshold_sweep.py  # Automated threshold sweep test
 │
 ├── models/
-│   ├── yolov8n.pt
-│   ├── yolov8s.pt
-│   ├── yolov8m.pt
-│   └── reid/
+│   ├── yolo11n.pt
+│   ├── yolo11s.pt
+│   ├── yolo11m.pt
+│   └── OsNetReID/
 │       └── osnet_x0_25_msmt17.pth
 │
 ├── output/
@@ -109,6 +109,12 @@ venv\Scripts\Activate.ps1        # Windows
 pip install -r requirements.txt
 ```
 
+Then copy `.env.example` to `.env` and set your camera URL:
+
+```bash
+Copy-Item .env.example .env     # then edit .env
+```
+
 ### GPU Support (recommended)
 
 By default, `pip install torch` installs a CPU-only build. For CUDA/GPU acceleration on an NVIDIA GPU:
@@ -128,16 +134,20 @@ All settings live in `config/settings.py`:
 
 | Setting                     | Purpose                                                    |
 | --------------------------- | ---------------------------------------------------------- |
-| `VIDEO_SOURCE`              | RTSP stream, video file path, or `0` for a webcam          |
+| `VIDEO_SOURCE`              | Read from `.env` — RTSP stream, video file path, or `0` for webcam |
+| `PROCESS_WIDTH/HEIGHT`      | Resolution every frame is resized to before processing     |
 | `DOOR_ZONE_POINTS`          | Four or more `(x, y)` points that define the entry polygon |
-| `YOLO_MODEL_PATH`           | Which YOLOv8 model file to use                             |
+| `ZONE_REFERENCE_RESOLUTION` | Resolution the polygon was drawn against (1920×1200)       |
+| `YOLO_MODEL_PATH`           | Which YOLO model file to use (overridable via `.env`)      |
 | `YOLO_CONFIDENCE_THRESHOLD` | Minimum person detection confidence (currently `0.5`)      |
+| `MEMORY_MAX_AGE_SECONDS`    | How long a person stays in memory before being forgotten   |
+| `SIMILARITY_THRESHOLD`      | Cosine-similarity cutoff for "same person" (currently `0.85`) |
 | `DEVICE`                    | Automatically uses CUDA when available, otherwise CPU      |
-| `DEBUG_MODE`                | Toggle verbose decision-logic output                       |
+| `DEBUG_MODE`                | Set via `.env`; toggles verbose decision-logic logs        |
 
-**Important:** `DOOR_ZONE_POINTS` must be set again for every new camera or video. The points must match the door area in the resized `1280 x 720` image. The active detector counts movement from outside the polygon to inside it. It does not count exits.
+**Camera credentials are loaded from `.env`, not from source files.** Copy `.env.example` to `.env`, fill in your RTSP URL, and the system picks it up automatically. This keeps passwords out of source control.
 
-Keep camera passwords out of source control. Use a private configuration or environment variables for production RTSP URLs.
+**Important:** `DOOR_ZONE_POINTS` must be set again for every new camera or video. The points must match the door area in the processed resolution defined by `PROCESS_WIDTH`/`PROCESS_HEIGHT` (1920×1200). If you change the processing resolution later, `get_zone_points()` automatically rescales the polygon from `ZONE_REFERENCE_RESOLUTION`. Use `find_coordinates_box.py` to click the 4 polygon corners on the live view. The detector counts movement from outside the polygon to inside it; it does not count exits.
 
 ---
 

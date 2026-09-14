@@ -39,7 +39,7 @@ while True:
 
     # Resize frame - change the video smaller or bigger
 
-    frame = cv2.resize(frame, (1024, 768))  # Resize to 1024x768 for better performance
+    frame = cv2.resize(frame, (1440, 800))  # Resize to 1440x800 for better performance
 
     detections = detector.detect(frame)
 

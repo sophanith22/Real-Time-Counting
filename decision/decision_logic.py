@@ -6,7 +6,13 @@ import time
 
 from memory.feature_memory import FeatureMemory
 from decision.similarity import cosine_similarity
-from config.settings import DEBUG_MODE
+from config.log import get_logger
+from config.settings import (
+    SIMILARITY_THRESHOLD, TIME_WINDOW_SECONDS,
+    FAST_MATCH_SECONDS, FAST_MATCH_THRESHOLD,
+)
+
+log = get_logger("decision")
 
 
 class DecisionEngine:
@@ -21,10 +27,10 @@ class DecisionEngine:
     """
 
     def __init__(self, memory: FeatureMemory,
-                 similarity_threshold: float = 0.85,
-                 time_window_seconds: float = 300,
-                 fast_match_seconds: float = 5.0,
-                 fast_match_threshold: float = 0.93):
+                 similarity_threshold: float = SIMILARITY_THRESHOLD,
+                 time_window_seconds: float = TIME_WINDOW_SECONDS,
+                 fast_match_seconds: float = FAST_MATCH_SECONDS,
+                 fast_match_threshold: float = FAST_MATCH_THRESHOLD):
         """
         memory: the FeatureMemory object that stores past people
         similarity_threshold: how similar counts as "same person"
@@ -45,8 +51,7 @@ class DecisionEngine:
     def evaluate(self, track_id: int, feature_vector: np.ndarray) -> Tuple[str, Optional[int], Optional[int], Optional[float], Optional[float]]:
         records = self.memory.get_all()
 
-        if DEBUG_MODE:
-            print(f"  [DEBUG] Memory has {len(records)} records BEFORE this evaluation")
+        log.debug(f"Memory has {len(records)} records BEFORE this evaluation")
 
         # Step 1: memory is empty - automatically NEW
         if len(records) == 0:
@@ -62,8 +67,7 @@ class DecisionEngine:
             record_features = record.get("features", [record.get("feature")])
             for stored_feature in record_features:
                 score = cosine_similarity(feature_vector, stored_feature)
-                if DEBUG_MODE:
-                    print(f"  Compared to record {i} similarity = {score:.4f}")
+                log.debug(f"  Compared to record {i} similarity = {score:.4f}")
                 if score > best_score:
                     best_score = score
                     best_index = i
@@ -74,13 +78,14 @@ class DecisionEngine:
         # Step 3: decide which threshold to use - normal or strict
         if time_since_seen < self.fast_match_seconds:
             required_score = self.fast_match_threshold
-            if DEBUG_MODE:
-                print(f"  [DEBUG] FAST match ({time_since_seen:.2f}s) - using strict threshold {required_score}")
+            log.debug(f"FAST match ({time_since_seen:.2f}s) - using strict threshold {required_score}")
         else:
             required_score = self.similarity_threshold
 
-        if DEBUG_MODE:
-            print(f"  >>> FINAL CHECK: best_score={best_score:.4f}, required={required_score}, is_new={best_score < required_score}")
+        log.debug(
+            f">>> FINAL CHECK: best_score={best_score:.4f}, "
+            f"required={required_score}, is_new={best_score < required_score}"
+        )
 
         # Step 4: not similar enough - NEW person
         if best_score < required_score:

@@ -6,7 +6,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-from config.settings import VIDEO_SOURCE
+from config.settings import VIDEO_SOURCE, PROCESS_WIDTH, PROCESS_HEIGHT
 
 clicked_points = []
 
@@ -39,7 +39,7 @@ while True:
     if not ret:
         continue
 
-    frame = cv2.resize(frame, (1920, 1200))
+    frame = cv2.resize(frame, (PROCESS_WIDTH, PROCESS_HEIGHT))
 
     for i, point in enumerate(clicked_points):
         cv2.circle(frame, point, 5, (0, 0, 255), -1)

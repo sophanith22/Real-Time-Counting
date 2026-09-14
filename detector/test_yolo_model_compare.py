@@ -19,6 +19,10 @@ MODELS_TO_TEST = [
     "models/yolov8s.pt",
     "models/yolov8m.pt",
     "models/yolov8l.pt",
+    "models/yolo11n.pt",
+    "models/yolo11s.pt",
+    "models/yolo11m.pt",
+    "models/yolo11l.pt",
 ]
 
 TEST_DURATION_SECONDS = 15  # how long to test each model

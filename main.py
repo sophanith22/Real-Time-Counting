@@ -3,7 +3,6 @@
 from typing import Any
 
 import cv2
-import sys
 import os
 import time
 import random
@@ -14,15 +13,19 @@ from collections import defaultdict, deque
 
 from tracker.person_tracker import PersonTracker
 from utils.zone_crossing import ZoneCrossingDetector
-# from utils.line_crossing import LineCrossingDetector
 from utils.cropper import crop_person
 from feature_extractor.reid_extractor import FeatureExtractor
 from memory.feature_memory import FeatureMemory
 from decision.decision_logic import DecisionEngine
+from config.log import get_logger
 from config.settings import (
-    DOOR_ZONE_POINTS, TRACKER_CONFIG, YOLO_MODEL_PATH, YOLO_CONFIDENCE_THRESHOLD,
-    YOLO_PERSON_CLASS_ID, DEVICE, VIDEO_SOURCE
+    get_zone_points, TRACKER_CONFIG, YOLO_MODEL_PATH, YOLO_CONFIDENCE_THRESHOLD,
+    YOLO_PERSON_CLASS_ID, DEVICE, VIDEO_SOURCE, PROCESS_WIDTH, PROCESS_HEIGHT,
+    CROP_BUFFER_SIZE, MAX_GALLERY_SIZE, THUMB_SIZE,
+    MEMORY_MAX_AGE_SECONDS, MEMORY_MAX_VIEWS,
 )
+
+log = get_logger("main")
 
 # --- Setup: build every component one time, at startup ---
 tracker = PersonTracker(
@@ -35,21 +38,13 @@ tracker = PersonTracker(
 
 # --- Zone crossing detector ---
 line_detector = ZoneCrossingDetector(
-    zone_points=DOOR_ZONE_POINTS
+    zone_points=get_zone_points()
 )
-
-# To use line crossing later:
-# from utils.line_crossing import LineCrossingDetector
-# line_detector = LineCrossingDetector(
-#     point_a=LINE_POINT_A,
-#     point_b=LINE_POINT_B,
-#     inside_is_positive_side=LINE_INSIDE_POSITIVE_SIDE
-# )
 
 # 3. Create Re-ID, Memory, and Decision Objects
 extractor = FeatureExtractor(device=DEVICE)
-memory = FeatureMemory(max_age_seconds=3600)
-decision_engine = DecisionEngine(memory=memory, similarity_threshold=0.85, time_window_seconds=300)
+memory = FeatureMemory(max_age_seconds=MEMORY_MAX_AGE_SECONDS, max_views=MEMORY_MAX_VIEWS)
+decision_engine = DecisionEngine(memory=memory)
 
 #4. Create Folders and Log File
 os.makedirs("output/crops", exist_ok=True)
@@ -65,7 +60,7 @@ with open(log_path, "w", newline="") as f:
         "matched_old_track_id"
     ])
 
-#5. The log_entry Function
+
 def log_entry(track_id, decision, matched_index, matched_track_id):
     with open(log_path, "a", newline="") as f:
         writer = csv.writer(f)
@@ -75,24 +70,42 @@ def log_entry(track_id, decision, matched_index, matched_track_id):
         ])
 
 
-print(f"Running on device: {DEVICE}")
+log.info(f"Running on device: {DEVICE}")
+
 # --- 6. Open the Camera and Capture ---
-cap = cv2.VideoCapture(VIDEO_SOURCE)
-if not cap.isOpened():
+def open_capture():
+    cap = cv2.VideoCapture(VIDEO_SOURCE)
+    if not cap.isOpened():
+        cap.release()
+        return None
+    return cap
+
+
+cap = open_capture()
+if cap is None:
     raise RuntimeError(f"Could not open video source: {VIDEO_SOURCE}")
+
+
+def read_frame(cap) -> tuple[bool, Any]:
+    """
+    Grab the LATEST frame (skipping stale buffered frames) and return it.
+    Returns (ok, frame).
+    """
+    for _ in range(2):
+        cap.grab()
+    ok, frame = cap.retrieve()
+    return ok, frame
+
 
 # 7. Create Counters and Buffers
 prev_time = time.time()
 entry_count = 0
 
 # --- This stores recent pictures for every tracking ID. ---
-BUFFER_SIZE = 6
-crop_buffer = defaultdict(lambda: deque(maxlen=BUFFER_SIZE))
+crop_buffer = defaultdict(lambda: deque(maxlen=CROP_BUFFER_SIZE))
 
 # --- Gallery strip setup ---
 gallery_crops = []
-MAX_GALLERY_SIZE = 5
-THUMB_SIZE = 85
 id_colors = {}
 
 # 8. Person Colors
@@ -102,6 +115,7 @@ def get_color(track_id):
         color = (rng.randint(0, 255), rng.randint(0, 255), rng.randint(0, 255))
         id_colors[track_id] = color
     return id_colors[track_id]
+
 
 # 9. Build the Gallery
 def build_gallery_strip(crops, thumb_size, max_size, strip_width):
@@ -118,12 +132,13 @@ def build_gallery_strip(crops, thumb_size, max_size, strip_width):
         x_offset += thumb_size + 10
     return strip
 
+
 # 10. Average Person Features
 def get_averaged_feature(track_id):
     crops = list(crop_buffer[track_id])
     if len(crops) == 0:
         return None
-    vectors = [v for v in (extractor.extract(c) for c in crops) 
+    vectors = [v for v in (extractor.extract(c) for c in crops)
                if v is not None]
     if len(vectors) == 0:
         return None
@@ -132,6 +147,7 @@ def get_averaged_feature(track_id):
     if norm > 0:
         averaged = averaged / norm
     return averaged
+
 
 # 11. Largest area crop selection for best quality
 def get_best_crop(track_id):
@@ -154,40 +170,34 @@ def get_best_crop(track_id):
 frame_count = 0
 
 while True:
-    for _ in range(2):
-        grabbed = cap.grab()
-
-    ret, frame = cap.retrieve()
+    ok, frame = read_frame(cap)
     frame_count += 1
 
-    if not ret:
-        print(f"Failed to retrieve frame at count {frame_count}, grabbed={grabbed}")
+    if not ok:
+        log.warning(f"Failed to retrieve frame at count {frame_count}; attempting reconnect...")
         cap.release()
-
-        while True:
+        cap = None
+        while cap is None:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-
-            print("Trying to reconnect to the camera...")
-            cap = cv2.VideoCapture(VIDEO_SOURCE)
-            if cap.isOpened():
-                print("Camera reconnected.")
+            log.info("Trying to reconnect to the camera...")
+            cap = open_capture()
+            if cap is not None:
+                log.info("Camera reconnected.")
                 break
-
-            cap.release()
             time.sleep(1)
 
-        if not cap.isOpened():
+        if cap is None or not cap.isOpened():
             break
 
         continue
 
-    frame = cv2.resize(frame, (1920, 1200))  # Resize to a smaller size for faster processing
-    clean_frame = frame.copy() # Filter the clean frame without boxes, text, or zone drawings.
+    frame = cv2.resize(frame, (PROCESS_WIDTH, PROCESS_HEIGHT))  # Resize to a smaller size for faster processing
+    clean_frame = frame.copy()  # Filter the clean frame without boxes, text, or zone drawings.
 
     # --- 13. Tracking and Detection & 14. Draw the Door Zone---
     tracks = tracker.track(frame)
-    zone_pts: np.ndarray[Any, np.dtype[np.signedinteger]] = np.array(DOOR_ZONE_POINTS, np.int32).reshape((-1, 1, 2))
+    zone_pts: np.ndarray[Any, np.dtype[np.signedinteger]] = np.array(get_zone_points(), np.int32).reshape((-1, 1, 2))
     cv2.polylines(frame, [zone_pts], isClosed=True, color=(0, 255, 255), thickness=2)
 
     # --- 15. Process each tracked person ---
@@ -196,7 +206,7 @@ while True:
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame, f"ID {track_id}", (x1, y1 - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-        
+
     # --- 16. Crop, Buffer, and Check for Crossing ---
         buffered_crop = crop_person(clean_frame, (x1, y1, x2, y2))
         if buffered_crop is not None:
@@ -210,7 +220,7 @@ while True:
         if crossed:
             # 18. Count the Entry
             entry_count += 1
-            print(f"Entry Event! Track ID {track_id} crossed the line.")
+            log.info(f"Entry Event! Track ID {track_id} crossed the line.")
 
             # 19. Create an Appearance Feature
             averaged_vector = get_averaged_feature(track_id)
@@ -219,9 +229,7 @@ while True:
                 decision, matched_index, matched_track_id, _, _ = decision_engine.evaluate(
                     track_id=track_id, feature_vector=averaged_vector
                 )
-                print(
-                    f"  Decision: {decision}, matched_old_track_id: {matched_track_id}"
-                )
+                log.info(f"  Decision: {decision}, matched_old_track_id: {matched_track_id}")
                 log_entry(
                     track_id, decision, matched_index, matched_track_id
                 )
@@ -233,7 +241,7 @@ while True:
                     cv2.imwrite(filename, best_crop)
                     gallery_crops.append((track_id, best_crop))
             else:
-                print(f"  Warning: no valid crops for ID {track_id}, skipped.")
+                log.warning(f"  No valid crops for ID {track_id}, skipped.")
 
             crop_buffer[track_id].clear()
 
@@ -266,5 +274,5 @@ with open(log_path, "a", newline="") as f:
     writer.writerow(["total_crossing_events", entry_count])
     writer.writerow(["unique_people_counted", unique_people])
 
-print(f"\nFinal Results: {entry_count} crossing events, {unique_people} unique people counted.")
-print(f"Log saved to: {log_path}")
+log.info(f"Final Results: {entry_count} crossing events, {unique_people} unique people counted.")
+log.info(f"Log saved to: {log_path}")
