@@ -3,10 +3,7 @@
 import time
 from typing import Dict, Tuple, List
 
-from config.log import get_logger
-from config.settings import ZONE_COOLDOWN_SECONDS
-
-log = get_logger("zone_crossing")
+from config.settings import DEBUG_MODE
 
 
 class ZoneCrossingDetector:
@@ -19,7 +16,7 @@ class ZoneCrossingDetector:
     """
 
     def __init__(self, zone_points: List[Tuple[int, int]],
-                 cooldown_seconds: float = ZONE_COOLDOWN_SECONDS):
+                 cooldown_seconds: float = 8.0):
         """
         zone_points: a list of (x, y) points defining the zone shape
         cooldown_seconds: after a track_id crosses, ignore any new
@@ -78,17 +75,16 @@ class ZoneCrossingDetector:
         last_time = self.last_crossed_time.get(track_id, 0.0)
         time_since_last = now - last_time
         if time_since_last < self.cooldown_seconds:
-            log.debug(
-                f"track_id {track_id}: jitter blocked "
-                f"({time_since_last:.2f}s since last real crossing, "
-                f"cooldown={self.cooldown_seconds}s)"
-            )
+            # Too soon after the last real crossing - this is jitter, ignore it
+            if DEBUG_MODE:
+                print(f"  [ZONE DEBUG] track_id {track_id}: jitter blocked "
+                      f"({time_since_last:.2f}s since last real crossing, "
+                      f"cooldown={self.cooldown_seconds}s)")
             return current_state, False
 
-        log.debug(
-            f"track_id {track_id}: REAL crossing accepted "
-            f"({time_since_last:.2f}s since last, or first time)"
-        )
+        if DEBUG_MODE:
+            print(f"  [ZONE DEBUG] track_id {track_id}: REAL crossing accepted "
+                  f"({time_since_last:.2f}s since last, or first time)")
 
         self.last_crossed_time[track_id] = now
         return current_state, True
