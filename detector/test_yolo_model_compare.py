@@ -19,10 +19,13 @@ MODELS_TO_TEST = [
     "models/yolov8s.pt",
     "models/yolov8m.pt",
     "models/yolov8l.pt",
+    "models/yolov8x.pt",
     "models/yolo11n.pt",
     "models/yolo11s.pt",
     "models/yolo11m.pt",
     "models/yolo11l.pt",
+    "models/yolo11x.pt",
+    "models/yolo26n.pt",
 ]
 
 TEST_DURATION_SECONDS = 15  # how long to test each model
@@ -82,3 +85,4 @@ for model_path in MODELS_TO_TEST:
 print("\n=== COMPARISON SUMMARY ===")
 for model_path, (fps, detections) in results.items():
     print(f"{model_path}: {fps:.2f} FPS, {detections:.2f} avg detections/frame")
+ 

@@ -77,8 +77,7 @@ People_Counting_Project/
 │   ├── __init__.py
 │   ├── similarity.py            # cosine_similarity()
 │   ├── decision_logic.py        # DecisionEngine — NEW / DUPLICATE / COUNT_AGAIN logic
-│   ├── test_decision.py         # Ground truth accuracy test
-│   └── test_threshold_sweep.py  # Automated threshold sweep test
+│   └── test_decision.py         # Ground truth accuracy test
 │
 ├── models/
 │   ├── yolo11n.pt

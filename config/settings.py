@@ -19,19 +19,22 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # DEVICE = "cpu"  # Force CPU for testing, change to "cuda" for GPU if available
 
 # Path to the YOLO model file
-"""
 YOLO_MODEL_PATH_NANNO = "models/yolov8n.pt" # Nano model, fastest but least accurate. Good for real-time use, but may miss detections.
 YOLO_MODEL_PATH_SMALL = "models/yolov8s.pt" # Small model, good for real-time use, but less accurate than medium model.
 YOLO_MODEL_PATH_MEDIUM = "models/yolov8m.pt" # Medium model, better accuracy but slower than small model. Not good for real-time use.
 YOLO_MODEL_PATH_LARGE = "models/yolov8l.pt" # Large model, best accuracy but slowest. Not good for real-time use.
+YOLO_MODEL_PATH_XLARGE = "models/yolov8x.pt" # Extra Large model, best accuracy but slowest. Not good for real-time use.
+
+YOLO_MODEL_PATH = "models/yolov8m.pt"  # yolov8m: best detection/frame from benchmark (9.40) at full 20 FPS. Change to
 """
 YOLO_MODEL_PATH_NANNO = "models/yolo11n.pt" # Nano model, fastest but least accurate. Good for real-time use, but may miss detections.
 YOLO_MODEL_PATH_SMALL = "models/yolo11s.pt" # Small model, good for real-time use, but less accurate than medium model.
 YOLO_MODEL_PATH_MEDIUM = "models/yolo11m.pt" # Medium model, better accuracy but slower than small model. Not good for real-time use.
 YOLO_MODEL_PATH_LARGE = "models/yolo11l.pt" # Large model, best accuracy but slowest. Not good for real-time use.
+YOLO_MODEL_PATH_XLARGE = "models/yolo11x.pt" # Extra Large model, best accuracy but slowest. Not good for real-time use.
 
-YOLO_MODEL_PATH = YOLO_MODEL_PATH_SMALL  # Use the small model for better speed, or YOLO_MODEL_PATH_NANNO for faster but less accurate detection. 
-
+YOLO_MODEL_PATH = "models/yolov8x.pt"  # yolov8x: most detections (9.29/frame) but ~15 FPS. Change to YOLO_MODEL_PATH_SMALL for faster/smaller, or YOLO_MODEL_PATH_LARGE for more accuracy. 
+"""
 # Path to the Re-ID model file (OSNet) is specific re-ID of people, not gerneric Imagenet.
 # REID_MODEL_PATH = "models/OsNetReID/osnet_x1_0_msmt17.pth" # is bigger model of OSNet, accuracy is better but slower. Not good for real-time use.
 REID_MODEL_PATH = "models/OsNetReID/osnet_x0_25_msmt17.pth" # is smallest model of OSNet, accuracy is lower but faster. Good for real-time use.
