@@ -91,5 +91,8 @@ class FeatureMemory:
     def count(self) -> int:
         """
         Return how many records are currently stored.
+        Prunes expired records first, so the number reflects
+        only people still within max_age_seconds.
         """
+        self._remove_old_records()
         return len(self.records)
